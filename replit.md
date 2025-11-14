@@ -55,6 +55,13 @@ All schemas are defined in `shared/schema.ts`:
 4. Admin can then create other users with appropriate roles via the Users page
 5. No self-registration after bootstrap - all accounts must be created by Admin/Manager
 
+**Known Limitation - User Creation**:
+- When Admin/Manager creates a new user, they will be signed out due to Firebase client-side API behavior
+- This is because `createUserWithEmailAndPassword` automatically signs in the newly created user
+- Admin will see a clear warning before user creation and will be redirected to login page afterward
+- **Production Solution**: This will be resolved by implementing Firebase Admin SDK on a backend server
+- **Workaround for MVP**: Admin must log back in after creating each user
+
 ### Attendance Tracking
 - Geolocation-based check-in (1km radius from office)
 - Haversine formula for distance calculation

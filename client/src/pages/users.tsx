@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users as UsersIcon, Plus, Loader2, Mail } from "lucide-react";
+import { Users as UsersIcon, Plus, Loader2, Mail, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
@@ -18,10 +20,12 @@ import { UserRole, type User } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function UsersPage() {
+  const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserName, setNewUserName] = useState("");
@@ -45,11 +49,8 @@ export default function UsersPage() {
         throw new Error("All fields are required");
       }
 
-      // Note: In production, user creation should be done via Firebase Admin SDK on the backend
-      // to avoid signing out the current admin/manager user. For this demo, we'll use a workaround.
-      
-      // Store current user's credentials to re-authenticate later if needed
-      const currentUserEmail = currentUser?.email;
+      // Note: This client-side user creation will sign out the current admin/manager
+      // In production, this should be done via Firebase Admin SDK on a backend server
       
       // Create Firebase auth user
       const userCredential = await createUserWithEmailAndPassword(
@@ -69,26 +70,30 @@ export default function UsersPage() {
 
       await setDoc(doc(firestore, "users", userCredential.user.uid), userData);
 
-      // Sign out the newly created user (they'll need to login with their credentials)
+      // Sign out the newly created user
       await auth.signOut();
-      
-      // Note: In a production app, the admin would remain signed in because 
-      // user creation would happen server-side via Admin SDK
 
-      return userCredential.user;
+      return { email: newUserEmail, name: newUserName };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "User Created",
-        description: "New user account has been created successfully",
+        title: "User Created Successfully",
+        description: `${data.name} (${data.email}) has been created. You've been signed out and will be redirected to login.`,
+        duration: 5000,
       });
+      
+      // Clear form
       setNewUserEmail("");
       setNewUserPassword("");
       setNewUserName("");
       setNewUserRole("");
       setCreateUserOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users/count"] });
+      setConfirmCreateOpen(false);
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        setLocation("/login");
+      }, 2000);
     },
     onError: (error: any) => {
       toast({
@@ -96,10 +101,26 @@ export default function UsersPage() {
         description: error.message || "An error occurred",
         variant: "destructive",
       });
+      setConfirmCreateOpen(false);
     },
   });
 
   const handleCreateUser = () => {
+    // Validate fields
+    if (!newUserEmail || !newUserPassword || !newUserName || !newUserRole) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Show confirmation dialog
+    setConfirmCreateOpen(true);
+  };
+
+  const confirmCreateUser = () => {
     createUserMutation.mutate();
   };
 
@@ -217,6 +238,54 @@ export default function UsersPage() {
                   </>
                 ) : (
                   "Create User"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmCreateOpen} onOpenChange={setConfirmCreateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                Important Notice
+              </DialogTitle>
+              <DialogDescription>
+                Please read this carefully before proceeding
+              </DialogDescription>
+            </DialogHeader>
+            <Alert className="border-destructive bg-destructive/10">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <AlertDescription>
+                <strong>You will be signed out</strong> after creating this user. This is a technical limitation of client-side Firebase user creation.
+                <br /><br />
+                You'll need to log back in with your credentials to continue using TeamConnect.
+                <br /><br />
+                <strong className="text-destructive">Future Update:</strong> This limitation will be resolved when backend user provisioning via Firebase Admin SDK is implemented.
+              </AlertDescription>
+            </Alert>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmCreateOpen(false)}
+                data-testid="button-cancel-create"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmCreateUser}
+                disabled={createUserMutation.isPending}
+                data-testid="button-confirm-create-user"
+              >
+                {createUserMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating User...
+                  </>
+                ) : (
+                  "I Understand, Create User"
                 )}
               </Button>
             </DialogFooter>
