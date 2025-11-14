@@ -1,0 +1,124 @@
+Build a web application called “TeamConnect” with the following requirements:
+
+⚙️ Overview
+
+Create a React + Firebase-based Attendance and Chat Management System for office teams.
+The app must track employee attendance using geolocation (within 1 km of the office) and provide a real-time group chat system for all users.
+
+🧩 Technology Stack
+
+Frontend: React (Vite preferred)
+
+Backend / Database: Firebase (Firestore + Realtime Database + Auth + Storage)
+
+Styling: Tailwind CSS
+
+Hosting: Firebase Hosting or Replit web preview
+
+👥 User Roles
+
+Admin
+
+Can create accounts for Manager, HR, Employee, and Client.
+
+Can view all attendance logs and all chat groups.
+
+Manager
+
+Can create Employee and HR accounts.
+
+Can create chat groups and assign members.
+
+HR
+
+Can view attendance reports and message employees.
+
+Employee
+
+Can mark attendance (if within 1 km of office).
+
+Can chat with team members in assigned groups.
+
+Client
+
+Can only join assigned chat groups.
+
+📍 Attendance Feature
+
+Get the user’s current geolocation (latitude, longitude) using the browser API.
+
+Compare user location with fixed office coordinates, e.g. (12.9716, 77.5946).
+
+If the user is within 1 km radius, show the “Mark Attendance” button.
+
+On click:
+
+Save attendance record in Firebase Realtime Database with fields:
+
+userId, userName, timestamp, coordinates, status (“Present”).
+
+If outside 1 km, disable button and show warning message: “You are outside the office area.”
+
+Include a year filter dropdown to view attendance records by year.
+
+💬 Chat Feature
+
+Use Firebase Firestore for real-time chat.
+
+Each chat group includes:
+
+Group ID, group name, members list, and messages (text + sender + timestamp).
+
+Show messages live as they’re sent.
+
+Allow users to create, join, and leave groups (based on permissions).
+
+Display sender name and message time in chat bubble UI.
+
+🔐 Authentication
+
+Use Firebase Authentication (Email/Password).
+
+Login, Register, and Logout functionality.
+
+Redirect user to dashboard after login.
+
+🧾 Dashboard
+
+Sidebar navigation with sections:
+
+Home
+
+Attendance
+
+Chat
+
+Reports
+
+Settings
+
+Admin dashboard includes:
+
+Attendance statistics (per month) using simple chart (e.g., Chart.js or Recharts).
+
+Responsive layout for desktop, tablet, and mobile.
+
+🎨 UI / UX
+
+Clean layout with Tailwind CSS.
+
+Navbar with user info and profile image.
+
+Cards for attendance history and team info.
+
+Light color palette and modern icons (Lucide React).
+
+📁 Project Structure
+
+/src/firebaseConfig.js → Firebase setup file
+
+/src/components → React components (Attendance, Chat, Dashboard, etc.)
+
+/src/pages → Login, Register, Home pages
+
+/src/utils/location.js → Utility to check 1 km radius using Haversine formula
